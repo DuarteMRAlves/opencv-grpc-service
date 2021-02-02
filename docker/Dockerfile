@@ -44,7 +44,7 @@ RUN pip install --upgrade pip && \
     # Install headless version of opencv-python for server usage
     # Does not install graphical modules
     # See https://github.com/opencv/opencv-python#installation-and-usage
-    pip install opencv-python-headless grpcio protobuf
+    pip install opencv-python-headless grpcio grpcio-reflection protobuf
 
 # Copy generated .py files
 COPY --from=builder --chown=${USER}:${GROUP} ${WORKDIR} ${WORKDIR}

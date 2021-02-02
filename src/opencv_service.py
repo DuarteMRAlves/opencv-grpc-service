@@ -1,5 +1,6 @@
 import concurrent.futures as futures
 import grpc
+import grpc_reflection.v1alpha.reflection as grpc_reflection
 import importlib
 import inspect
 import logging
@@ -66,7 +67,6 @@ class ServiceImpl(opencv_service_pb2_grpc.OpenCVServiceServicer):
             self.__build_pose_dictionary(pose)
             for pose in request.detected_poses.poses
         ]
-        print(poses)
         processed_image = self.__calling_fn(image, poses)
         return opencv_service_pb2.Image(data=processed_image)
 
@@ -164,6 +164,14 @@ if __name__ == '__main__':
     opencv_service_pb2_grpc.add_OpenCVServiceServicer_to_server(
         ServiceImpl(calling_fn),
         server)
+
+    # Add reflection
+    service_names = (
+        opencv_service_pb2.DESCRIPTOR.services_by_name['OpenCVService'].full_name,
+        grpc_reflection.SERVICE_NAME
+    )
+    grpc_reflection.enable_server_reflection(service_names, server)
+
     server.add_insecure_port(target)
     server.start()
     logging.info(f'Server started at {target}')
