@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+/*
+ * Generic service offered by the servers created
+ * with this repository.
+ * It receives an image as well as the detected human poses
+ * in the given image. It applies some transformation to
+ * the image taking the poses into account and returns
+ * the new image
+ * :param ImageWithPoses: The image to process and
+ *                        the detected poses
+ * :returns: The transformed image
+ */
+service OpenCVService {
+    rpc process(ImageWithPoses) returns (Image);
+}
+
+/*
+ * Image for the service to process.
+ * Also has the human poses detected in the image.
+ */
+message ImageWithPoses {
+    Image image = 1;
+    DetectedPoses detected_poses = 2;
+}
+
+/*
+ * Image to analyse
+ * param data: bytes of the image file
+ *             encoded in some image format
+ */
+message Image {
+    bytes data = 1;
+}
+
+/*
+ * Message to represent the discovered poses
+ * param poses: list of detected poses
+ */
+message DetectedPoses {
+    repeated Pose poses = 1;
+}
+
+/*
+ * Message to represent a human pose
+ * param key_points: detected key-points for the pose
+ */
+message Pose {
+    repeated KeyPoint key_points = 1;
+}
+
+/*
+ * Message to represent a body part within
+ * the pose representation
+ * :param index: index of the keypoint in the person skeleton
+ * :param x: x coordinate of the keypoint (percentage from 0 to 1)
+ * :param y: y coordinate of the keypoint (percentage from 0 to 1)
+ * :param confidence: confidence score for the keypoint
+ */
+message KeyPoint {
+    uint32 index = 1;
+    float x = 2;
+    float y = 3;
+    float score = 4;
+}
