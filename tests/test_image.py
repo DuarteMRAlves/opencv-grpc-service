@@ -31,7 +31,7 @@ def create_random_poses():
 
 
 def process_image(stub, image_path):
-    print(f'Estimating image: \'{image_path}\'')
+    print(f'Processing image: \'{image_path}\'')
     with open(image_path, 'rb') as fp:
         image_bytes = fp.read()
     image = opencv_service_pb2.Image(data=image_bytes)
@@ -63,7 +63,7 @@ def parse_args():
     parser.add_argument(
         '--target',
         metavar='target',
-        default='localhost:50051',
+        default='localhost:8061',
         help='Location of the tested server (defaults to localhost:50051)')
     return parser.parse_args()
 

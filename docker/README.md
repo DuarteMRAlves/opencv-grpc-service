@@ -19,7 +19,7 @@ $ docker build --tag opencv-grpc-server:latest -f docker/Dockerfile .
 * Run the image:
 
 ```shell
-$ docker run --rm -it -p 50051:50051 --mount type=bind,source=<path to file with function>,target=/opencv-grpc/external.py --name opencv-grpc-server opencv-grpc-server:latest
+$ docker run --rm -it -p 8061:8061 --mount type=bind,source=<path to file with function>,target=/workspace/external.py --name opencv-grpc-server opencv-grpc-server:latest
 ```
 
 ## Environment Variables
@@ -33,4 +33,4 @@ The docker image defines several environment variables:
 
 ### PORT
 
-`PORT` specifies the port where the gRPC server should listen (the default is 50051).
+`PORT` specifies the port where the gRPC server should listen (the default is 8061).

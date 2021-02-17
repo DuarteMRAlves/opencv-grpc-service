@@ -1,27 +1,28 @@
 # Define workdir folder for all stages
 # Must be renewed in the beggining of each stage
-ARG WORKDIR=/opencv-grpc/
+ARG WORKSPACE=/workspace
+ARG PROTO_FILE=opencv_service.proto
 
 # --------------------------------------
 # Builder stage to generate .proto files
 # --------------------------------------
 
 FROM python:3.8.7-slim-buster as builder
-# Renew workdir arg
-ARG WORKDIR
-
-RUN pip install --upgrade pip && \
-    pip install grpcio grpcio-tools
+# Renew build args
+ARG WORKSPACE
+ARG PROTO_FILE
 
 # Path for the protos folder to copy
 ARG PROTOS_FOLDER_DIR=protos
 
-COPY ${PROTOS_FOLDER_DIR} ${WORKDIR}
-WORKDIR ${WORKDIR}
+RUN pip install --upgrade pip && \
+    pip install grpcio==1.35.0 grpcio-tools==1.35.0 protobuf==3.14.0
+
+COPY ${PROTOS_FOLDER_DIR} ${WORKSPACE}/
+WORKDIR ${WORKSPACE}
 
 # Compile proto file and remove it
-RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. opencv_service.proto && \
-    rm opencv_service.proto
+RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ${PROTO_FILE}
 
 
 # -----------------------------
@@ -29,31 +30,44 @@ RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. opencv_se
 # -----------------------------
 
 FROM python:3.8.7-slim-buster
-# Renew workdir arg
-ARG WORKDIR
+# Renew build args
+ARG WORKSPACE
+ARG PROTO_FILE
 
 ARG USER=runner
 ARG GROUP=runner-group
-ARG GRPC_SERVICES_DIR=src
+ARG SRC_DIR=src
 
-# Create non-privileged user to run
+# Create non-privileged user and workspace
 RUN addgroup --system ${GROUP} && \
-    adduser --system --no-create-home --ingroup ${GROUP} ${USER}
+    adduser --system --no-create-home --ingroup ${GROUP} ${USER} && \
+    mkdir ${WORKSPACE} && \
+    chown -R ${USER}:${GROUP} ${WORKSPACE}
+
+# Install requirements
+COPY requirements.txt .
 
 RUN pip install --upgrade pip && \
     # Install headless version of opencv-python for server usage
     # Does not install graphical modules
     # See https://github.com/opencv/opencv-python#installation-and-usage
-    pip install opencv-python-headless grpcio grpcio-reflection protobuf
+    pip install -r requirements.txt && \
+    rm requirements.txt
 
-# Copy generated .py files
-COPY --from=builder --chown=${USER}:${GROUP} ${WORKDIR} ${WORKDIR}
-# Copy code
-COPY ${GRPC_SERVICES_DIR} ${WORKDIR}
+# COPY .proto file to root to meet ai4eu specifications
+COPY --from=builder --chown=${USER}:${GROUP} ${WORKSPACE}/${PROTO_FILE} /
+
+# Copy generated .py files to workspace
+COPY --from=builder --chown=${USER}:${GROUP} ${WORKSPACE}/*.py ${WORKSPACE}/
+# Copy code to workspace
+COPY --chown=${USER}:${GROUP} ${SRC_DIR} ${WORKSPACE}/
 
 # Change to non-privileged user
 USER ${USER}
 
-WORKDIR ${WORKDIR}
+# Expose port 8061 according to ai4eu specifications
+EXPOSE 8061
+
+WORKDIR ${WORKSPACE}
 
 CMD ["python", "opencv_service.py"]

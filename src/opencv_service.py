@@ -14,7 +14,7 @@ _MODULE_ENV_VAR = 'MODULE'
 _MODULE_DEFAULT = 'external'
 
 _PORT_ENV_VAR = 'PORT'
-_PORT_DEFAULT = 50051
+_PORT_DEFAULT = 8061
 
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
 
@@ -147,9 +147,13 @@ def get_calling_function(module, name):
 
 
 if __name__ == '__main__':
-    logging.basicConfig()
+    logging.basicConfig(
+        format='[ %(levelname)s ] %(asctime)s (%(module)s) %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        level=logging.INFO)
     module_name = os.getenv(_MODULE_ENV_VAR, _MODULE_DEFAULT)
     # Check if external module was imported
+    logging.info('Importing external module: \'%s\'', module_name)
     module = import_module(module_name)
     if not module:
         exit(1)
