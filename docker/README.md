@@ -13,13 +13,13 @@ In order to use this image, execute the following steps *(from the repository ro
 * Build the image:
 
 ```shell
-$ docker build --tag opencv-grpc-server:latest -f docker/Dockerfile . 
+$ docker build --tag sipgisr/opencv-grpc:latest -f docker/Dockerfile . 
 ```
 
 * Run the image:
 
 ```shell
-$ docker run --rm -it -p 8061:8061 --mount type=bind,source=<path to file with function>,target=/workspace/external.py --name opencv-grpc-server opencv-grpc-server:latest
+$ docker run --rm -it -p 8061:8061 --mount type=bind,source=<path to file with function>,target=/workspace/external.py sipgisr/opencv-grpc:latest
 ```
 
 ## Environment Variables
