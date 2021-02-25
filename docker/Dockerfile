@@ -1,7 +1,11 @@
 # Define workdir folder for all stages
 # Must be renewed in the beggining of each stage
 ARG WORKSPACE=/workspace
-ARG PROTO_FILE=opencv_service.proto
+# This argument will be used to identify the
+# proto file as well as the python file with the server
+# The proto file should have the name ${SERVICE_NAME}.proto
+# The python file should have the name ${SERVICE_NAME}_service.py
+ARG SERVICE_NAME
 
 # --------------------------------------
 # Builder stage to generate .proto files
@@ -10,7 +14,7 @@ ARG PROTO_FILE=opencv_service.proto
 FROM python:3.8.7-slim-buster as builder
 # Renew build args
 ARG WORKSPACE
-ARG PROTO_FILE
+ARG SERVICE_NAME
 
 # Path for the protos folder to copy
 ARG PROTOS_FOLDER_DIR=protos
@@ -22,7 +26,7 @@ COPY ${PROTOS_FOLDER_DIR} ${WORKSPACE}/
 WORKDIR ${WORKSPACE}
 
 # Compile proto file and remove it
-RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ${PROTO_FILE}
+RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ${SERVICE_NAME}.proto
 
 
 # -----------------------------
@@ -32,11 +36,11 @@ RUN python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. ${PROTO_F
 FROM python:3.8.7-slim-buster
 # Renew build args
 ARG WORKSPACE
-ARG PROTO_FILE
+ARG SERVICE_NAME
 
 ARG USER=runner
 ARG GROUP=runner-group
-ARG SRC_DIR=src
+ARG SRC=src
 
 # Create non-privileged user and workspace
 RUN addgroup --system ${GROUP} && \
@@ -55,12 +59,15 @@ RUN pip install --upgrade pip && \
     rm requirements.txt
 
 # COPY .proto file to root to meet ai4eu specifications
-COPY --from=builder --chown=${USER}:${GROUP} ${WORKSPACE}/${PROTO_FILE} /
+COPY --from=builder --chown=${USER}:${GROUP} ${WORKSPACE}/${SERVICE_NAME}.proto /
 
 # Copy generated .py files to workspace
 COPY --from=builder --chown=${USER}:${GROUP} ${WORKSPACE}/*.py ${WORKSPACE}/
-# Copy code to workspace
-COPY --chown=${USER}:${GROUP} ${SRC_DIR} ${WORKSPACE}/
+
+# Copy the service file and the utils to workspace
+# (rename service file to only service.py for generic usage)
+COPY --chown=${USER}:${GROUP} ${SRC}/utils.py ${WORKSPACE}/utils.py
+COPY --chown=${USER}:${GROUP} ${SRC}/${SERVICE_NAME}_service.py ${WORKSPACE}/service.py
 
 # Change to non-privileged user
 USER ${USER}
@@ -70,4 +77,4 @@ EXPOSE 8061
 
 WORKDIR ${WORKSPACE}
 
-CMD ["python", "opencv_service.py"]
+CMD ["python", "service.py"]

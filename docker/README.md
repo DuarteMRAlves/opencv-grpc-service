@@ -8,18 +8,10 @@ Also, it is already build with the necessary sources for the gRPC service to run
 
 ## Usage
 
-In order to use this image, execute the following steps *(from the repository root directory)*:
-
-* Build the image:
+In order to use this image, execute the following command *(from the repository root directory)*:
 
 ```shell
-$ docker build --tag sipgisr/opencv-grpc:latest -f docker/Dockerfile . 
-```
-
-* Run the image:
-
-```shell
-$ docker run --rm -it -p 8061:8061 --mount type=bind,source=<path to file with function>,target=/workspace/external.py sipgisr/opencv-grpc:latest
+$ docker run --rm -it -p 8061:8061 --mount type=bind,source=<path to file with function>,target=/workspace/external.py sipgisr/opencv-grpc:<specific tag>-latest
 ```
 
 ## Environment Variables
@@ -34,3 +26,20 @@ The docker image defines several environment variables:
 ### PORT
 
 `PORT` specifies the port where the gRPC server should listen (the default is 8061).
+
+## Building the image
+
+In this repository, we define multiple gRPC services. 
+In order to build the image for a specific service, execute the respective command *(from the repository root directory)*:
+
+### Generic Image Service
+
+```shell
+$ docker build --tag sipgisr/opencv-grpc:generic-latest --build-arg SERVICE_NAME=image_generic -f docker/Dockerfile .
+```
+
+### Image With Poses Service
+
+```shell
+$ docker build --tag sipgisr/opencv-grpc:poses-latest --build-arg SERVICE_NAME=image_with_poses -f docker/Dockerfile .
+```

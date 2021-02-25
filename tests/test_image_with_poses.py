@@ -4,14 +4,14 @@ import argparse
 import grpc
 import io
 import matplotlib.pyplot as plt
-import opencv_service_pb2
-import opencv_service_pb2_grpc
+import image_with_poses_pb2
+import image_with_poses_pb2_grpc
 import PIL.Image as PIL_image
 
 
 def create_random_keypoints(x_coords, y_coords):
     return [
-        opencv_service_pb2.KeyPoint(
+        image_with_poses_pb2.KeyPoint(
             index=i,
             x=x_coords,
             y=y_coords,
@@ -20,23 +20,24 @@ def create_random_keypoints(x_coords, y_coords):
         for i in range(18)
     ]
 
+
 def create_random_poses():
     key_points1 = create_random_keypoints(1, 1)
     key_points2 = create_random_keypoints(2,2)
     poses = (
-        opencv_service_pb2.Pose(key_points=key_points1),
-        opencv_service_pb2.Pose(key_points=key_points2)
+        image_with_poses_pb2.Pose(key_points=key_points1),
+        image_with_poses_pb2.Pose(key_points=key_points2)
     )
-    return opencv_service_pb2.DetectedPoses(poses=poses)
+    return image_with_poses_pb2.DetectedPoses(poses=poses)
 
 
 def process_image(stub, image_path):
     print(f'Processing image: \'{image_path}\'')
     with open(image_path, 'rb') as fp:
         image_bytes = fp.read()
-    image = opencv_service_pb2.Image(data=image_bytes)
+    image = image_with_poses_pb2.Image(data=image_bytes)
     poses = create_random_poses()
-    request = opencv_service_pb2.ImageWithPoses(
+    request = image_with_poses_pb2.ImageWithPoses(
         image=image,
         detected_poses=poses)
     return stub.process(request)
@@ -73,7 +74,7 @@ if __name__ == '__main__':
     target = args.target
     image_path = args.image
     with grpc.insecure_channel(target) as channel:
-        estimator_stub = opencv_service_pb2_grpc.OpenCVServiceStub(channel)
+        estimator_stub = image_with_poses_pb2_grpc.ImageWithPosesServiceStub(channel)
         try:
             response = process_image(estimator_stub, image_path)
             display_image(response)

@@ -1,13 +1,10 @@
 import concurrent.futures as futures
 import grpc
 import grpc_reflection.v1alpha.reflection as grpc_reflection
-import importlib
-import inspect
 import logging
-import opencv_service_pb2
-import opencv_service_pb2_grpc
-import os
-import time
+import image_with_poses_pb2
+import image_with_poses_pb2_grpc
+import utils
 
 
 _MODULE_ENV_VAR = 'MODULE'
@@ -21,7 +18,7 @@ _ONE_DAY_IN_SECONDS = 60 * 60 * 24
 _CALLING_FUNCTION_NAME = 'calling_function'
 
 
-class ServiceImpl(opencv_service_pb2_grpc.OpenCVServiceServicer):
+class ServiceImpl(image_with_poses_pb2_grpc.ImageWithPosesServiceServicer):
 
     def __init__(self, calling_function):
         """
@@ -68,7 +65,7 @@ class ServiceImpl(opencv_service_pb2_grpc.OpenCVServiceServicer):
             for pose in request.detected_poses.poses
         ]
         processed_image = self.__calling_fn(image, poses)
-        return opencv_service_pb2.Image(data=processed_image)
+        return image_with_poses_pb2.Image(data=processed_image)
 
     @staticmethod
     def __build_pose_dictionary(pose):
@@ -85,102 +82,26 @@ class ServiceImpl(opencv_service_pb2_grpc.OpenCVServiceServicer):
         return {kp.index: (kp.x, kp.y) for kp in pose.key_points}
 
 
-def get_port():
-    """
-    Parses the port where the server should listen
-    Exists the program if the environment variable
-    is not an int or the value is not positive
-    Returns:
-        The port where the server should listen
-    """
-    try:
-        server_port = int(os.getenv(_PORT_ENV_VAR, _PORT_DEFAULT))
-        if server_port <= 0:
-            logging.error('Port should be greater than 0')
-            exit(1)
-        return server_port
-    except ValueError:
-        logging.exception('Unable to parse port')
-        exit(1)
-
-
-def import_module(name):
-    """Imports the given module
-
-    Args:
-        name: name of the module to import
-
-    Returns:
-        The module if successful and None otherwise
-
-    """
-
-    try:
-        return importlib.import_module(name)
-    except ImportError as err:
-        logging.exception('Unable to import module with external code', err)
-        return None
-
-
-def get_calling_function(module, name):
-    """Tries to retrieve the function with the given
-    name from the given module
-
-    Args:
-        module: module for the function
-        name: name to search
-
-    Returns:
-        The found function if any or None otherwise
-
-    """
-    candidates = inspect.getmembers(
-        module,
-        lambda x: inspect.isfunction(x) and x.__name__ == name
-    )
-    num_candidates = len(candidates)
-    if num_candidates == 1:
-        return candidates[0][1]
-    else:
-        logging.error(f'No function with name \'{name}\' in module \'{module.__name__}\'')
-        return None
-
-
 if __name__ == '__main__':
     logging.basicConfig(
         format='[ %(levelname)s ] %(asctime)s (%(module)s) %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
         level=logging.INFO)
-    module_name = os.getenv(_MODULE_ENV_VAR, _MODULE_DEFAULT)
-    # Check if external module was imported
-    logging.info('Importing external module: \'%s\'', module_name)
-    module = import_module(module_name)
-    if not module:
-        exit(1)
 
-    calling_fn = get_calling_function(module, _CALLING_FUNCTION_NAME)
+    calling_fn = utils.get_calling_function()
     if not calling_fn:
         exit(1)
 
-    port = get_port()
-    target = f'[::]:{port}'
     server = grpc.server(futures.ThreadPoolExecutor())
-    opencv_service_pb2_grpc.add_OpenCVServiceServicer_to_server(
+    image_with_poses_pb2_grpc.add_ImageWithPosesServiceServicer_to_server(
         ServiceImpl(calling_fn),
         server)
 
     # Add reflection
     service_names = (
-        opencv_service_pb2.DESCRIPTOR.services_by_name['OpenCVService'].full_name,
+        image_with_poses_pb2.DESCRIPTOR.services_by_name['ImageWithPosesService'].full_name,
         grpc_reflection.SERVICE_NAME
     )
     grpc_reflection.enable_server_reflection(service_names, server)
 
-    server.add_insecure_port(target)
-    server.start()
-    logging.info(f'Server started at {target}')
-    try:
-        while True:
-            time.sleep(_ONE_DAY_IN_SECONDS)
-    except KeyboardInterrupt:
-        server.stop(0)
+    utils.run_server(server)

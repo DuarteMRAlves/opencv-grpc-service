@@ -1,17 +1,14 @@
 syntax = "proto3";
 
 /*
- * Generic service offered by the servers created
- * with this repository.
- * It receives an image as well as the detected human poses
- * in the given image. It applies some transformation to
- * the image taking the poses into account and returns
- * the new image
+ * Service that receives an image as well as the detected human
+ * poses in the given image. It applies some transformation to
+ * the image taking the poses into account and returns the new image
  * :param ImageWithPoses: The image to process and
  *                        the detected poses
  * :returns: The transformed image
  */
-service OpenCVService {
+service ImageWithPosesService {
     rpc process(ImageWithPoses) returns (Image);
 }
 

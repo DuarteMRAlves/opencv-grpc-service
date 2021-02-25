@@ -54,6 +54,6 @@ The return value is the bytes for the image after it was processed, encoded in s
 
 ## gRPC Service Definition
 
-The gRPC service is defined in the [opencv_service](protos/opencv_service.proto) proto file.
+The gRPC service is defined in the [opencv_service](protos/image_with_poses.proto) proto file.
 It defines a single unary method. 
 Each request will invoke the 'calling_function' with the received parameters.

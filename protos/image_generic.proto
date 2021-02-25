@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+/*
+ * Service that receives an image, applies some
+ * transformation to it and returns the new image
+ * :param Image: The image to process
+ * :returns: The transformed image
+ */
+service ImageGenericService {
+    rpc process(Image) returns (Image);
+}
+
+/*
+ * Message to represent an image
+ * param data: bytes of the image file
+ *             encoded in some image format
+ */
+message Image {
+    bytes data = 1;
+}
